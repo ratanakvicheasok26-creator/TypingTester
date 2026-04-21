@@ -63,7 +63,7 @@ def _seed_texts(conn):
 
     texts = [
         # ── Easy ─────────────────────────────────────────────────────────────
-        ("The sun rose over the hills and painted the sky in shades of orange and pink. "
+        ("Dear Sokunmaltey, The sun rose over the hills and painted the sky in shades of orange and pink like kanha Sokunmaltey. "
          "Birds began to sing their morning songs as the world slowly woke up.", "easy"),
 
         ("A cat sat on the mat and looked out the window. The rain fell softly on the "
