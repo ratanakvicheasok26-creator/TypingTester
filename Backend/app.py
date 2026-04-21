@@ -91,7 +91,7 @@ def _seed_texts(conn):
     texts = [
         # ── Easy ─────────────────────────────────────────────────────────────
         # FIX (improvement): Removed personalised name from seed text.
-        ("The sun rose over the hills and painted the sky in shades of orange "
+        ("Love Sokunmaltey pinh besdong "
          "and pink. Birds began to sing their morning songs as the world slowly "
          "woke up.", "easy"),
 
