@@ -321,4 +321,4 @@ if __name__ == '__main__':
 
     # FIX (security): Debug mode controlled by env var — never hardcoded True.
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(debug=debug_mode, port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=False)
