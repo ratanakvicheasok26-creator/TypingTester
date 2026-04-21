@@ -5,7 +5,7 @@ Main entry point for the backend API server.
 Handles routes for texts, results, and leaderboard.
 """
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, g
 from flask_cors import CORS
 import sqlite3
 import os
@@ -18,21 +18,42 @@ FRONTEND_DIR = os.path.join(BASE_DIR, '..', 'frontend')
 DB_PATH = os.path.join(BASE_DIR, 'typing_tester.db')
 
 app = Flask(__name__, static_folder=FRONTEND_DIR)
-CORS(app)  # Allow cross-origin requests from the frontend
+
+# FIX (security): Restrict CORS to your frontend origin in production.
+# Set the FRONTEND_ORIGIN env var (e.g. "https://yourdomain.com").
+# Falls back to localhost for local development.
+_cors_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+CORS(app, origins=[_cors_origin])
 
 
 # ── Database ───────────────────────────────────────────────────────────────────
 
 def get_db():
-    """Return a database connection with row_factory for dict-like rows."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """
+    Return a per-request database connection stored on Flask's g object.
+    The connection is automatically closed at the end of each request via
+    close_db() registered below — no more file-handle leaks.
+    """
+    if 'db' not in g:
+        g.db = sqlite3.connect(DB_PATH)
+        g.db.row_factory = sqlite3.Row
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(error=None):
+    """FIX (bug): Close the DB connection at the end of every request."""
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
 
 
 def init_db():
-    """Create tables if they don't exist."""
-    with get_db() as conn:
+    """Create tables and indexes if they don't exist."""
+    # init_db() is called outside a request context, so we open directly here.
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS results (
                 id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +61,7 @@ def init_db():
                 wpm       REAL    NOT NULL,
                 accuracy  REAL    NOT NULL,
                 errors    INTEGER NOT NULL DEFAULT 0,
-                duration  INTEGER NOT NULL DEFAULT 60,  -- seconds
+                duration  INTEGER NOT NULL DEFAULT 60,
                 difficulty TEXT   NOT NULL DEFAULT 'medium',
                 timestamp TEXT    NOT NULL
             );
@@ -50,9 +71,15 @@ def init_db():
                 content    TEXT    NOT NULL,
                 difficulty TEXT    NOT NULL DEFAULT 'medium'
             );
+
+            -- FIX (improvement): Index for fast leaderboard queries.
+            CREATE INDEX IF NOT EXISTS idx_results_diff_wpm
+                ON results (difficulty, wpm DESC);
         """)
         conn.commit()
         _seed_texts(conn)
+    finally:
+        conn.close()
 
 
 def _seed_texts(conn):
@@ -63,8 +90,10 @@ def _seed_texts(conn):
 
     texts = [
         # ── Easy ─────────────────────────────────────────────────────────────
-        ("Dear Sokunmaltey, The sun rose over the hills and painted the sky in shades of orange and pink like kanha Sokunmaltey. "
-         "Birds began to sing their morning songs as the world slowly woke up.", "easy"),
+        # FIX (improvement): Removed personalised name from seed text.
+        ("The sun rose over the hills and painted the sky in shades of orange "
+         "and pink. Birds began to sing their morning songs as the world slowly "
+         "woke up.", "easy"),
 
         ("A cat sat on the mat and looked out the window. The rain fell softly on the "
          "street below while she watched the drops race down the glass.", "easy"),
@@ -133,6 +162,14 @@ def _seed_texts(conn):
     conn.commit()
 
 
+# ── Helpers ────────────────────────────────────────────────────────────────────
+
+# FIX (improvement): Sanity limits for submitted results.
+_VALID_DIFFICULTIES = ('easy', 'medium', 'hard')
+_ALLOWED_DURATIONS  = (15, 30, 60, 120)   # seconds — extend as needed
+_MAX_WPM            = 300                  # world record is ~216; 300 gives headroom
+
+
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
 @app.route('/')
@@ -149,14 +186,14 @@ def get_text():
         difficulty: easy | medium | hard  (default: medium)
     """
     difficulty = request.args.get('difficulty', 'medium').lower()
-    if difficulty not in ('easy', 'medium', 'hard'):
+    if difficulty not in _VALID_DIFFICULTIES:
         difficulty = 'medium'
 
-    with get_db() as conn:
-        rows = conn.execute(
-            "SELECT id, content, difficulty FROM texts WHERE difficulty = ?",
-            (difficulty,)
-        ).fetchall()
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, content, difficulty FROM texts WHERE difficulty = ?",
+        (difficulty,)
+    ).fetchall()
 
     if not rows:
         return jsonify({"error": "No texts found"}), 404
@@ -186,24 +223,37 @@ def submit_result():
         return jsonify({"error": f"Missing fields: {missing}"}), 400
 
     # Sanitise / clamp values
-    username  = str(data['username'])[:32].strip() or "Anonymous"
-    wpm       = max(0, float(data['wpm']))
-    accuracy  = max(0, min(100, float(data['accuracy'])))
-    errors    = max(0, int(data['errors']))
-    duration  = int(data['duration'])
-    difficulty = data['difficulty'] if data['difficulty'] in ('easy','medium','hard') else 'medium'
-    timestamp = datetime.utcnow().isoformat()
+    username   = str(data['username'])[:32].strip() or "Anonymous"
+    difficulty = data['difficulty'] if data['difficulty'] in _VALID_DIFFICULTIES else 'medium'
+    timestamp  = datetime.utcnow().isoformat()
 
-    with get_db() as conn:
-        cur = conn.execute(
-            """INSERT INTO results (username, wpm, accuracy, errors, duration, difficulty, timestamp)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (username, wpm, accuracy, errors, duration, difficulty, timestamp)
-        )
-        conn.commit()
-        result_id = cur.lastrowid
+    try:
+        wpm      = float(data['wpm'])
+        accuracy = float(data['accuracy'])
+        errors   = int(data['errors'])
+        duration = int(data['duration'])
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid numeric fields"}), 400
 
-    return jsonify({"id": result_id, "message": "Result saved successfully"}), 201
+    # FIX (improvement): Validate numeric ranges.
+    if not (0 <= wpm <= _MAX_WPM):
+        return jsonify({"error": f"WPM must be between 0 and {_MAX_WPM}"}), 400
+    if not (0 <= accuracy <= 100):
+        return jsonify({"error": "Accuracy must be between 0 and 100"}), 400
+    if errors < 0:
+        return jsonify({"error": "Errors cannot be negative"}), 400
+    if duration not in _ALLOWED_DURATIONS:
+        return jsonify({"error": f"Duration must be one of {_ALLOWED_DURATIONS}"}), 400
+
+    conn = get_db()
+    cur = conn.execute(
+        """INSERT INTO results (username, wpm, accuracy, errors, duration, difficulty, timestamp)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (username, wpm, accuracy, errors, duration, difficulty, timestamp)
+    )
+    conn.commit()
+
+    return jsonify({"id": cur.lastrowid, "message": "Result saved successfully"}), 201
 
 
 @app.route('/api/leaderboard', methods=['GET'])
@@ -215,26 +265,33 @@ def leaderboard():
         limit: int (default 10, max 50)
     """
     difficulty = request.args.get('difficulty', 'all').lower()
-    limit = min(int(request.args.get('limit', 10)), 50)
 
-    with get_db() as conn:
-        if difficulty == 'all':
-            rows = conn.execute(
-                """SELECT username, wpm, accuracy, errors, duration, difficulty, timestamp
-                   FROM results
-                   ORDER BY wpm DESC
-                   LIMIT ?""",
-                (limit,)
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                """SELECT username, wpm, accuracy, errors, duration, difficulty, timestamp
-                   FROM results
-                   WHERE difficulty = ?
-                   ORDER BY wpm DESC
-                   LIMIT ?""",
-                (difficulty, limit)
-            ).fetchall()
+    # FIX (bug): Safe integer parse — returns 400 instead of crashing.
+    try:
+        limit = min(int(request.args.get('limit', 10)), 50)
+    except (ValueError, TypeError):
+        return jsonify({"error": "limit must be an integer"}), 400
+
+    conn = get_db()
+    if difficulty == 'all':
+        rows = conn.execute(
+            """SELECT username, wpm, accuracy, errors, duration, difficulty, timestamp
+               FROM results
+               ORDER BY wpm DESC
+               LIMIT ?""",
+            (limit,)
+        ).fetchall()
+    else:
+        if difficulty not in _VALID_DIFFICULTIES:
+            difficulty = 'medium'
+        rows = conn.execute(
+            """SELECT username, wpm, accuracy, errors, duration, difficulty, timestamp
+               FROM results
+               WHERE difficulty = ?
+               ORDER BY wpm DESC
+               LIMIT ?""",
+            (difficulty, limit)
+        ).fetchall()
 
     return jsonify([dict(r) for r in rows])
 
@@ -242,15 +299,16 @@ def leaderboard():
 @app.route('/api/stats', methods=['GET'])
 def global_stats():
     """Return aggregate statistics for fun display."""
-    with get_db() as conn:
-        row = conn.execute(
-            """SELECT COUNT(*) as total_tests,
-                      ROUND(AVG(wpm), 1) as avg_wpm,
-                      MAX(wpm) as max_wpm,
-                      ROUND(AVG(accuracy), 1) as avg_accuracy
-               FROM results"""
-        ).fetchone()
+    conn = get_db()
+    row = conn.execute(
+        """SELECT COUNT(*) as total_tests,
+                  ROUND(COALESCE(AVG(wpm), 0), 1)      as avg_wpm,
+                  COALESCE(MAX(wpm), 0)                 as max_wpm,
+                  ROUND(COALESCE(AVG(accuracy), 0), 1)  as avg_accuracy
+           FROM results"""
+    ).fetchone()
 
+    # FIX (improvement): COALESCE above ensures no null values reach the client.
     return jsonify(dict(row))
 
 
@@ -260,4 +318,7 @@ if __name__ == '__main__':
     init_db()
     print("✅  Database initialised")
     print("🚀  Starting Typing Tester API on http://localhost:5000")
-    app.run(debug=True, port=5000)
+
+    # FIX (security): Debug mode controlled by env var — never hardcoded True.
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug_mode, port=5000)
