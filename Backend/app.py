@@ -316,8 +316,8 @@ def global_stats():
 
 if __name__ == '__main__':
     init_db()
-    print("✅  Database initialised")
-    print("🚀  Starting Typing Tester API on http://localhost:5000")
+    print("  Database initialised")
+    print("  Starting Typing Tester API on http://localhost:5000")
 
     # FIX (security): Debug mode controlled by env var — never hardcoded True.
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
