@@ -1,110 +1,106 @@
-# ⌨️ TypeRacer — Typing Speed Test
+# TypeRacer — Typing Speed Test
 
-A modern, full-stack typing speed test application with real-time feedback,
-a leaderboard, and multiple difficulty levels.
+Hey there! This is a cool typing speed test app I built. It's got a full-stack setup with real-time feedback, a leaderboard to see how you stack up, and different difficulty levels to challenge yourself.
 
 ---
 
-## 📁 Project Structure
+## What's in the Box
 
 ```
 typing-tester/
 ├── backend/
-│   ├── app.py               # Flask application — all API routes
-│   ├── requirements.txt     # Python dependencies
-│   └── typing_tester.db     # SQLite database (auto-created on first run)
+│   ├── app.py               # The main Flask app handling all the API stuff
+│   ├── requirements.txt     # Just Flask and Flask-CORS, that's it
+│   └── typing_tester.db     # SQLite database that gets created automatically
 │
 ├── frontend/
-│   └── index.html           # Complete single-file frontend (HTML + CSS + JS)
+│   └── index.html           # Everything frontend in one file - HTML, CSS, JS
 │
-└── README.md
+└── README.md                # This file you're reading
 ```
 
-### File Descriptions
+### Quick File Breakdown
 
-| File | Purpose |
-|------|---------|
-| `backend/app.py` | Main Flask server. Initialises the SQLite DB, seeds typing texts, and exposes 4 REST endpoints. |
-| `backend/requirements.txt` | `flask` and `flask-cors` — the only two dependencies. |
-| `frontend/index.html` | Fully self-contained frontend. Works offline (demo mode) and connects to the backend for real scores. |
+| File                       | What it does                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `backend/app.py`           | The heart of the backend. Sets up the database, adds some sample texts, and provides 4 API endpoints.       |
+| `backend/requirements.txt` | Only needs `flask` and `flask-cors`. Super lightweight.                                                     |
+| `frontend/index.html`      | The whole frontend packed into one file. Can run offline for demo, or connect to backend for saving scores. |
 
 ---
 
-## 🚀 Setup & Run
+## Getting Started
 
-### Prerequisites
-- Python 3.9+  
-- pip
+### What You Need
 
-### 1. Clone / Download
+- Python 3.9 or newer
+- pip (comes with Python)
+
+### Step 1: Get the Code
 
 ```bash
-# If using git:
+# If you're using git:
 git clone <repo-url> typing-tester
 cd typing-tester
 ```
 
-### 2. Install Backend Dependencies
+### Step 2: Set Up the Backend
 
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-### 3. Start the Backend
+### Step 3: Fire Up the Backend
 
 ```bash
 python app.py
 ```
 
-You should see:
+You should see something like:
+
 ```
-✅  Database initialised
-🚀  Starting Typing Tester API on http://localhost:5000
-```
-
-The database (`typing_tester.db`) is automatically created and seeded with
-15 sample texts (5 per difficulty) on the first run.
-
-### 4. Open the Frontend
-
-Open `frontend/index.html` in any modern browser.
-
-**Option A — Direct file open (simplest):**
-```
-File → Open → typing-tester/frontend/index.html
+Database initialised
+Starting Typing Tester API on http://localhost:5000
 ```
 
-**Option B — Serve via Flask (recommended, avoids CORS edge cases):**
+The database file `typing_tester.db` will be created on first run, and it'll come pre-loaded with 15 sample texts (5 for each difficulty level).
 
-Flask already serves the frontend at `http://localhost:5000` — just visit that URL.
+### Step 4: Launch the Frontend
+
+Just open `frontend/index.html` in your favorite browser.
+
+**Easy way:**  
+Right-click the file and open it directly.
+
+**Better way (avoids some browser quirks):**  
+Since Flask serves the frontend too, just go to `http://localhost:5000` in your browser.
 
 ---
 
-## 🌐 API Endpoints
+## API Stuff
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET`  | `/api/text?difficulty=medium` | Fetch a random typing paragraph |
-| `POST` | `/api/results` | Submit a completed test result |
-| `GET`  | `/api/leaderboard?difficulty=all&limit=10` | Retrieve top scores |
-| `GET`  | `/api/stats` | Global aggregate statistics |
+Here's what the backend can do:
 
-### POST `/api/results` body
-```json
-{
-  "username": "Alice",
-  "wpm": 72.5,
-  "accuracy": 96.3,
-  "errors": 4,
-  "duration": 30,
-  "difficulty": "medium"
+| Method | Endpoint                                   | What it does                        |
+| ------ | ------------------------------------------ | ----------------------------------- |
+| `GET`  | `/api/text?difficulty=medium`              | Grabs a random paragraph for typing |
+| `POST` | `/api/results`                             | Saves your test results             |
+| `GET`  | `/api/leaderboard?difficulty=all&limit=10` | Shows the top scores                |
+| `GET`  | `/api/stats`                               | Gives you overall stats             |
+
+### For the POST `/api/results`
+
+Send JSON like this:
+
+"difficulty": "medium"
 }
-```
+
+````
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ```sql
 CREATE TABLE results (
@@ -123,35 +119,36 @@ CREATE TABLE texts (
     content    TEXT    NOT NULL,
     difficulty TEXT    NOT NULL DEFAULT 'medium'
 );
-```
+````
 
 ---
 
-## 🎮 Features
+## Features
 
-- **Three difficulty levels** — Easy / Medium / Hard with distinct vocabulary and complexity
-- **Three timer modes** — 15s / 30s / 60s
-- **Real-time feedback** — characters highlight blue (correct) or red (incorrect) as you type
-- **Live WPM** — updates every keystroke using the standard 5-chars-per-word formula
-- **Accuracy tracking** — percentage of correct keystrokes
-- **Backspace support** — undo mistakes mid-test
-- **Animated countdown ring** — turns red in the last 5 seconds
-- **Result modal** — personalised title based on your WPM score
-- **Leaderboard** — top 15 scores, filterable by difficulty
-- **Offline/demo mode** — app works fully without the backend (scores just won't persist)
-- **Dark theme** with electric lime accent and subtle grid background
+- **Three difficulty levels** — Easy, Medium, Hard with different vocab and complexity
+- **Three timer modes** — 15s, 30s, 60s
+- **Real-time feedback** — letters turn blue if correct, red if wrong as you type
+- **Live WPM** — updates with every keystroke using the 5-chars-per-word rule
+- **Accuracy tracking** — shows how many keystrokes were right
+- **Backspace support** — fix mistakes while testing
+- **Animated countdown ring** — goes red in the last 5 seconds
+- **Result modal** — gets a fun title based on your speed
+- **Leaderboard** — top 15 scores, can filter by difficulty
+- **Offline/demo mode** — works without backend, but scores don't save
+- **Dark theme** with lime accents and a cool grid background
+- **Caps-lock warning** — tells you if CAPS LOCK is on
+- **i18n support** — can handle non-English texts
 
 ---
 
-## 🔮 Suggested Improvements
+## Ideas for the Future
 
-1. **User accounts** — JWT auth so players own their history
-2. **Historical graphs** — Chart.js line graph of WPM over time
-3. **Custom texts** — Let users paste their own paragraphs
-4. **Multiplayer** — WebSocket race mode (Socket.IO)
-5. **Code snippets mode** — Typing mode for programming languages
-6. **Sound effects** — Click sounds per keystroke, fanfare on completion
-7. **Mobile keyboard support** — Optimise for on-screen keyboards
-8. **PostgreSQL migration** — For production deployments
-9. **Caps-lock warning** — Detect and alert when CAPS LOCK is on
-10. **i18n** — Support non-English typing tests
+1. **User accounts** — Add login so people can track their own progress
+2. **Progress charts** — Show WPM trends over time with graphs
+3. **Custom texts** — Let users add their own paragraphs to type
+4. **Multiplayer mode** — Race against others in real-time
+5. **Code typing mode** — Practice typing code snippets
+6. **Sound effects** — Add typing sounds and completion fanfare
+7. **Mobile friendly** — Better support for phone keyboards
+8. **Better database** — Switch to PostgreSQL for bigger setups
+9. **More languages** — Support for different languages
