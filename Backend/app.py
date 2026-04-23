@@ -20,7 +20,7 @@ DB_PATH = os.path.join(BASE_DIR, 'typing_tester.db')
 app = Flask(__name__, static_folder=FRONTEND_DIR)
 
 # FIX (security): Restrict CORS to your frontend origin in production.
-# Set the FRONTEND_ORIGIN env var (e.g. "https://yourdomain.com").
+# Set the FRONTEND_ORIGIN env var (e.g. "https://mydomain.com").
 # Falls back to localhost for local development.
 _cors_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 CORS(app, origins=[_cors_origin])

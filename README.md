@@ -11,8 +11,8 @@ typing-tester/
 ├── backend/
 │   ├── app.py               # The main Flask app handling all the API stuff
 │   ├── requirements.txt     # Just Flask and Flask-CORS, that's it
-│   └── typing_tester.db     # SQLite database that gets created automatically
-│
+│   |── typing_tester.db     # SQLite database that gets created automatically 
+│   ├── requirements.txt 
 ├── frontend/
 │   └── index.html           # Everything frontend in one file - HTML, CSS, JS
 │
