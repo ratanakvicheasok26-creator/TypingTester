@@ -7,16 +7,19 @@ Hey there! This is a cool typing speed test app I built. It's got a full-stack s
 ## What's in the Box
 
 ```
-typing-tester/
-├── backend/
+TypingTester/
+├── Backend/
 │   ├── app.py               # The main Flask app handling all the API stuff
 │   ├── requirements.txt     # Just Flask and Flask-CORS, that's it
-│   |── typing_tester.db     # SQLite database that gets created automatically 
-│   ├── requirements.txt 
-├── frontend/
+│   └── typing_tester.db     # SQLite database that gets created automatically
+│
+├── Frontend/
 │   └── index.html           # Everything frontend in one file - HTML, CSS, JS
 │
-└── README.md                # This file you're reading
+├── LICENSE                  # Project license
+├── README.md                # This file you're reading
+├── .git/                    # Git version control
+└── .gitignore               # Git ignore rules
 ```
 
 ### Quick File Breakdown
