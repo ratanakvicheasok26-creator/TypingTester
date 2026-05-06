@@ -176,9 +176,7 @@ _MAX_WPM            = 300                  # world record is ~216; 300 gives hea
 def home():
     return "Typing Tester API is running!"
 
-@app.route("/")
-def index():
-    return send_from_directory("frontend", "index.html")
+
 
 
 @app.route('/api/text', methods=['GET'])
