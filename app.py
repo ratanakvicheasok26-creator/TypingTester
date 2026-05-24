@@ -103,6 +103,12 @@ def home():
     return send_from_directory(frontend_dir, 'index.html')
 
 
+# ✅ API health/test endpoint
+@app.route("/api/ping", methods=["GET"])
+def ping():
+    return jsonify({"message": "pong", "status": "ok"})
+
+
 # ── Get Random Text ───────────────────────────────────────
 @app.route("/api/text", methods=["GET"])
 def get_text():
@@ -229,6 +235,25 @@ def stats():
     """).fetchone()
 
     return jsonify(dict(row))
+
+
+# ── Health Check ─────────────────────────────────────────
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    return jsonify({"status": "ok"})
+
+
+# ── Frontend fallback (serve index.html for non-API paths)
+@app.route("/<path:path>")
+def catch_all(path):
+    if path.startswith("api/"):
+        return jsonify({"error": "API endpoint not found"}), 404
+
+    frontend_dir = os.path.join(BASE_DIR, 'frontend')
+    requested_file = os.path.join(frontend_dir, path)
+    if os.path.exists(requested_file) and os.path.isfile(requested_file):
+        return send_from_directory(frontend_dir, path)
+    return send_from_directory(frontend_dir, "index.html")
 
 
 # ── Run Server ───────────────────────────────────────────

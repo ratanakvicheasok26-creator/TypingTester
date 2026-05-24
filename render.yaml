@@ -20,10 +20,5 @@ services:
       - key: FLASK_ENV
         value: "production"
 
-    # Port configuration
-    routes:
-      - path: "/api/*"
-        matchType: "path-prefix"
-
-    # Health check (optional)
-    healthCheckPath: "/api/stats"
+    # Health check endpoint
+    healthCheckPath: "/healthz"
