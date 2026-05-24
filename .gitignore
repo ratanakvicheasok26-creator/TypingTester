@@ -2,6 +2,8 @@ backend/__pycache__/
 backend/*.db
 backend/*.pyc
 backend/target/
+__pycache__/
+*.pyc
 frontend/node_modules/
 frontend/build/
 node_modules/
