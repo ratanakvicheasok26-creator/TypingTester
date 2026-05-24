@@ -18,9 +18,14 @@ DB_PATH = os.path.join(BASE_DIR, 'typing_tester.db')
 
 app = Flask(__name__)
 
-# CORS (allow frontend from Vercel)
-_cors_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
-CORS(app, origins=[_cors_origin])
+# CORS (allow frontend from local and production)
+_cors_origins = [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "http://localhost:3000",
+    os.getenv("FRONTEND_ORIGIN", "")
+]
+CORS(app, origins=list(filter(None, _cors_origins)))
 
 
 # ── Database ────────────────────────────────────────────────
