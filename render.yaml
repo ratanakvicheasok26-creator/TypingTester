@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: typing-tester-backend
+    env: python
+    region: oregon
+    plan: free
+
+    # Install dependencies from project root
+    buildCommand: "pip install -r requirements.txt"
+
+    # Start command — points to backend.app:app (not app:app)
+    startCommand: "gunicorn backend.app:app"
+
+    # Environment variables (optional)
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: FRONTEND_ORIGIN
+        value: "https://your-frontend-domain.com"
+      - key: FLASK_ENV
+        value: "production"
+
+    # Port configuration
+    routes:
+      - path: "/api/*"
+        matchType: "path-prefix"
+
+    # Health check (optional)
+    healthCheckPath: "/api/stats"
