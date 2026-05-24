@@ -5,7 +5,7 @@ Clean API-only backend for Render deployment.
 Frontend is handled separately by Vercel.
 """
 
-from flask import Flask, jsonify, request, g, send_from_directory
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 import sqlite3
 import os
@@ -96,11 +96,10 @@ _ALLOWED_DURATIONS = (15, 30, 60, 120)
 
 # ── Routes ────────────────────────────────────────────────
 
-# ✅ Serve Frontend HTML
-@app.route("/")
+# ✅ Root API status endpoint
+@app.route("/", methods=["GET"])
 def home():
-    frontend_dir = os.path.join(BASE_DIR, 'frontend')
-    return send_from_directory(frontend_dir, 'index.html')
+    return jsonify({"status": "ok", "service": "Typing Tester API"})
 
 
 # ✅ API health/test endpoint
@@ -243,17 +242,10 @@ def healthz():
     return jsonify({"status": "ok"})
 
 
-# ── Frontend fallback (serve index.html for non-API paths)
+# ── API fallback for unknown paths
 @app.route("/<path:path>")
 def catch_all(path):
-    if path.startswith("api/"):
-        return jsonify({"error": "API endpoint not found"}), 404
-
-    frontend_dir = os.path.join(BASE_DIR, 'frontend')
-    requested_file = os.path.join(frontend_dir, path)
-    if os.path.exists(requested_file) and os.path.isfile(requested_file):
-        return send_from_directory(frontend_dir, path)
-    return send_from_directory(frontend_dir, "index.html")
+    return jsonify({"error": "Not found", "path": path}), 404
 
 
 # ── Run Server ───────────────────────────────────────────
