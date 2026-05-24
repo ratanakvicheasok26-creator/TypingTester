@@ -1,157 +1,166 @@
-# TypeRacer — Typing Speed Test
+# TypingTester Full-Stack App
 
-Hey there! This is a cool typing speed test app I built. It's got a full-stack setup with real-time feedback, a leaderboard to see how you stack up, and different difficulty levels to challenge yourself.
+This workspace now contains a modern full-stack application with a React frontend and a Java Spring Boot backend. The architecture is designed for a clean separation of concerns, responsive UI, REST-based communication, and MySQL persistence.
 
----
-
-## What's in the Box
+## New Project Structure
 
 ```
 TypingTester/
-├── Backend/
-│   ├── app.py               # The main Flask app handling all the API stuff
-│   ├── requirements.txt     # Just Flask and Flask-CORS, that's it
-│   └── typing_tester.db     # SQLite database that gets created automatically
-│
-├── Frontend/
-│   └── index.html           # Everything frontend in one file - HTML, CSS, JS
-│
-├── LICENSE                  # Project license
-├── README.md                # This file you're reading
-├── .git/                    # Git version control
-└── .gitignore               # Git ignore rules
+├── backend/
+│   ├── pom.xml
+│   ├── .env.example
+│   └── src/
+│       └── main/
+│           ├── java/com/typingtogether/
+│           │   ├── TypingTogetherApplication.java
+│           │   ├── config/WebConfig.java
+│           │   ├── controller/AuthController.java
+│           │   ├── controller/RecordController.java
+│           │   ├── dto/
+│           │   │   ├── ApiResponse.java
+│           │   │   ├── AuthResponse.java
+│           │   │   ├── LoginRequest.java
+│           │   │   ├── RecordRequest.java
+│           │   │   └── UserRequest.java
+│           │   ├── exception/
+│           │   │   ├── ApiExceptionHandler.java
+│           │   │   └── ResourceNotFoundException.java
+│           │   ├── model/
+│           │   │   ├── TypingRecord.java
+│           │   │   └── User.java
+│           │   ├── repository/
+│           │   │   ├── TypingRecordRepository.java
+│           │   │   └── UserRepository.java
+│           │   ├── service/
+│           │   │   ├── AuthService.java
+│           │   │   ├── RecordService.java
+│           │   │   └── TokenService.java
+│           └── resources/
+│               └── application.properties
+├── frontend/
+│   ├── package.json
+│   ├── .env.example
+│   ├── public/
+│   │   └── index.html
+│   └── src/
+│       ├── App.js
+│       ├── index.js
+│       ├── styles.css
+│       ├── services/api.js
+│       ├── utils/validators.js
+│       └── components/
+│           ├── ContactForm.jsx
+│           ├── Dashboard.jsx
+│           ├── ErrorMessage.jsx
+│           ├── FeatureCards.jsx
+│           ├── Footer.jsx
+│           ├── Hero.jsx
+│           ├── LoadingSpinner.jsx
+│           └── NavBar.jsx
+├── .gitignore
+└── README.md
 ```
 
-### Quick File Breakdown
+## Backend Setup
 
-| File                       | What it does                                                                                                |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `backend/app.py`           | The heart of the backend. Sets up the database, adds some sample texts, and provides 4 API endpoints.       |
-| `backend/requirements.txt` | Only needs `flask` and `flask-cors`. Super lightweight.                                                     |
-| `frontend/index.html`      | The whole frontend packed into one file. Can run offline for demo, or connect to backend for saving scores. |
+1. Install Java 17+ and Maven.
+2. Create a MySQL database named `typing_test`.
+3. Copy `backend/.env.example` to `backend/.env` and configure the connection settings.
 
----
+Example `backend/.env`:
 
-## Getting Started
-
-### What You Need
-
-- Python 3.9 or newer
-- pip (comes with Python)
-
-### Step 1: Get the Code
-
-```bash
-# If you're using git:
-git clone <repo-url> typing-tester
-cd typing-tester
+```properties
+MYSQL_URL=jdbc:mysql://localhost:3306/typing_test?useSSL=false&serverTimezone=UTC
+MYSQL_USERNAME=root
+MYSQL_PASSWORD=yourpassword
+JWT_SECRET=ReplaceWithAStrongSecret
 ```
 
-### Step 2: Set Up the Backend
+4. Start the backend:
 
 ```bash
 cd backend
-pip install -r requirements.txt
+mvn clean package
+mvn spring-boot:run
 ```
 
-### Step 3: Fire Up the Backend
+The API will start at `http://localhost:8080`.
+
+## Frontend Setup
+
+1. Install Node.js 18+.
+2. Copy `frontend/.env.example` to `frontend/.env`.
+3. Install dependencies and start the client:
 
 ```bash
-python app.py
+cd frontend
+npm install
+npm start
 ```
 
-You should see something like:
+The React app will run at `http://localhost:3000`.
 
-```
-Database initialised
-Starting Typing Tester API on http://localhost:5000
-```
+## Frontend and Backend Connection
 
-The database file `typing_tester.db` will be created on first run, and it'll come pre-loaded with 15 sample texts (5 for each difficulty level).
+The frontend uses the Fetch API and reads the backend base URL from `REACT_APP_API_BASE_URL`.
 
-### Step 4: Launch the Frontend
+The server exposes REST endpoints under `/api/*`, including authentication, dashboard, and record management.
 
-Just open `frontend/index.html` in your favorite browser.
+### Key API endpoints
 
-**Easy way:**  
-Right-click the file and open it directly.
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/dashboard`
+- `GET /api/records`
+- `POST /api/records`
+- `PUT /api/records/{id}`
+- `DELETE /api/records/{id}`
 
-**Better way (avoids some browser quirks):**  
-Since Flask serves the frontend too, just go to `http://localhost:5000` in your browser.
+### Example request flow
 
----
+1. The user registers or signs in.
+2. Backend validates credentials and returns a JWT token.
+3. React stores the token in `localStorage`.
+4. Frontend sends `Authorization: Bearer <token>` on protected requests.
+5. Backend validates the token and returns JSON data.
 
-## API Stuff
+## API Example
 
-Here's what the backend can do:
+### Register
 
-| Method | Endpoint                                   | What it does                        |
-| ------ | ------------------------------------------ | ----------------------------------- |
-| `GET`  | `/api/text?difficulty=medium`              | Grabs a random paragraph for typing |
-| `POST` | `/api/results`                             | Saves your test results             |
-| `GET`  | `/api/leaderboard?difficulty=all&limit=10` | Shows the top scores                |
-| `GET`  | `/api/stats`                               | Gives you overall stats             |
+```http
+POST /api/auth/register
+Content-Type: application/json
 
-### For the POST `/api/results`
-
-Send JSON like this:
-
-"difficulty": "medium"
+{
+  "username": "tester",
+  "email": "tester@example.com",
+  "password": "StrongPassword123"
 }
+```
 
-````
+### Login
 
----
+```http
+POST /api/auth/login
+Content-Type: application/json
 
-## Database Schema
+{
+  "email": "tester@example.com",
+  "password": "StrongPassword123"
+}
+```
 
-```sql
-CREATE TABLE results (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    username   TEXT    NOT NULL,
-    wpm        REAL    NOT NULL,
-    accuracy   REAL    NOT NULL,
-    errors     INTEGER NOT NULL DEFAULT 0,
-    duration   INTEGER NOT NULL DEFAULT 60,
-    difficulty TEXT    NOT NULL DEFAULT 'medium',
-    timestamp  TEXT    NOT NULL
-);
+### Dashboard
 
-CREATE TABLE texts (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    content    TEXT    NOT NULL,
-    difficulty TEXT    NOT NULL DEFAULT 'medium'
-);
-````
+```http
+GET /api/dashboard
+Authorization: Bearer <token>
+```
 
----
+## Notes
 
-## Features
-
-- **Three difficulty levels** — Easy, Medium, Hard with different vocab and complexity
-- **Three timer modes** — 15s, 30s, 60s
-- **Real-time feedback** — letters turn blue if correct, red if wrong as you type
-- **Live WPM** — updates with every keystroke using the 5-chars-per-word rule
-- **Accuracy tracking** — shows how many keystrokes were right
-- **Backspace support** — fix mistakes while testing
-- **Animated countdown ring** — goes red in the last 5 seconds
-- **Result modal** — gets a fun title based on your speed
-- **Leaderboard** — top 15 scores, can filter by difficulty
-- **Offline/demo mode** — works without backend, but scores don't save
-- **Dark theme** with lime accents and a cool grid background
-- **Caps-lock warning** — tells you if CAPS LOCK is on
-- **i18n support** — can handle non-English texts
-
----
-
-## Ideas for the Future
-
-1. **User accounts** — Add login so people can track their own progress
-2. **Progress charts** — Show WPM trends over time with graphs
-3. **Custom texts** — Let users add their own paragraphs to type
-4. **Multiplayer mode** — Race against others in real-time
-5. **Code typing mode** — Practice typing code snippets
-6. **Sound effects** — Add typing sounds and completion fanfare
-7. **Mobile friendly** — Better support for phone keyboards
-8. **Better database** — Switch to PostgreSQL for bigger setups
-9. **More languages** — Support for different languages
+- Backend uses MVC architecture with service and controller layers.
+- Frontend uses reusable React components and handles loading, validation, and API errors.
+- Environment variables secure database credentials and JWT settings.
+- CORS is configured so the React frontend can safely talk to the backend.
