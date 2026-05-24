@@ -5,7 +5,7 @@ Clean API-only backend for Render deployment.
 Frontend is handled separately by Vercel.
 """
 
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request, g, send_from_directory
 from flask_cors import CORS
 import sqlite3
 import os
@@ -91,10 +91,11 @@ _ALLOWED_DURATIONS = (15, 30, 60, 120)
 
 # ── Routes ────────────────────────────────────────────────
 
-# ✅ ONLY ONE ROOT ROUTE (FIXED)
+# ✅ Serve Frontend HTML
 @app.route("/")
 def home():
-    return "Typing Tester API is running!"
+    frontend_dir = os.path.join(os.path.dirname(BASE_DIR), 'frontend')
+    return send_from_directory(frontend_dir, 'index.html')
 
 
 # ── Get Random Text ───────────────────────────────────────
